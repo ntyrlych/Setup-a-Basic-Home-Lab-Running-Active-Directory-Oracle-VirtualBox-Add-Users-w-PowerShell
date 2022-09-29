@@ -1,0 +1,278 @@
+A walk through how to create an Active Directory home lab Environment using Oracle Virtual Box. Configuring and running this lab will definitely help 
+develop your understanding of how active directory and windows networking works.
+
+Prerequisite:
+- Server 2019 ISO:
+- Windows 10 ISO:
+- PowerShell Script:
+
+Step 1 — Download Requirements.
+
+Lets start with getting all the requirements ready , use the following links to download the files needed:
+
+https://www.virtualbox.org/wiki/Downloads
+https://www.microsoft.com/en-us/evalcenter/evaluate-windows-server-2019
+https://www.microsoft.com/en-us/evalcenter/evaluate-windows-10-enterprise
+After the downloads have been completed , go ahead and install VirtualBox and proceed to the next step.
+
+Step 2 — Create Server 2019 Virtual Machine (VM)
+
+First lets create the Server 2019 VM.
+
+a) Open VirtualBox > New > Set the following parameters:
+Name : DomainController
+Type: Microsoft Windows
+Version: 64bit
+
+Now click next , now we have to set the amount of RAM we allocate to the virtual machine. It depends on your host machine but for this guide we will be 
+using 2GB > Continue to click next on the remaining steps with the default settings until the setup is complete. Now our domain controller is created and the next 
+step is to configure the settings.
+
+b) Click on Settings > Advanced > Set the following parameters:
+Shared Clipboard: Bidirectional
+Drag'n'Drop: Bidirectional
+
+Now go to System > Processor.
+Processor: 1CPU
+Execution Cap: 100%
+Extended Features: Enable PAE/NX
+
+My laptop has a total of four cores, so I will set my VM to run on one core. However, if your system has more capacity e.g. 12 Cores, then increase the 
+amount of core towards the right side of the green area.
+
+Now go to Network > Adapter 2.
+
+Enable Nework Adapter
+Attached to Internal Network
+
+We are done with the settings, click “OK”.
+
+c) Double click the VM to start it.
+
+Now we have to select our Server 2019 ISO. Follow the steps below and start the machine.
+On Optical Disk Selector > Medium > Click 'Add' > Attached '...SERVER_EVAL_x64FRE_en-us_1.iso...' > Click 'Choose'
+
+Now we have to install the operating system > Select the “Desktop Experience” option otherwise we won’t have access to the graphical user interface (GUI).
+
+Windows Setup > Windows Server 2019 Standard Evaluation (Desktop Experience) x64 > Select Custom > Next > Allow the VM to reboot , set your password and 
+finish the installation.
+
+Now we have to login to the VM , it will ask you to press Ctrl + Alt + Delete. If you try to do it on your keyboard it won’t work, Go to 
+Input > Keyboard > Insert Ctrl + Alt + Delete
+
+Step 3 — Install VirtualBox Guest Additions
+
+a) On VirtualBox click on Devices > Guest Additions CD Image. Now in your VM go to > File Explorer > This PC > After you click “Guest Additions CD Image” 
+you should see it in the VM in “This PC” > Now click on the installation file “VBoxWindowsAdditions-amd64” and keep clicking next until you complete the 
+installation > When the option comes select “Reboot Later” > Now you’re VM should run a lot faster and smoother. Proceed the shutdown the VM by going to 
+the Start Menu > Shutdown > Now lets start our virtual machine back up.
+
+Step 4 — Setup Server Network Adapters and Rename PC
+
+a) Go to Network settings> Change adapter options.
+
+Right click each network and click status > details and note down each of their IP addresses.
+
+We have two IP addresses here for each individual network:
+
+10.0.2.15
+169.254.138.229
+Rename the network with an IP address similar to IP 1. to > “INTERNET” and rename the network with an IP address similar to IP 2. to > “INTERNAL”.
+
+b) We have to assign the IP address to internal adapter now.
+
+Right click “INTERNAL” go to properties > double click on “Internet Protocol Version 4” > Click on “Use the following address”. Use the following values:
+
+IP address : 172.16.0.1
+Subnet Mask: 255.255.255.0
+
+Click on “Use the following DNS server addresses”. Use the following values:
+
+Preferred DNS server: 127.0.0.1
+
+NOTE: 127.0.01 refers to an address called localhost or loopback address and you can read more about it here https://www.lifewire.com/network-computer-special-ip-address-818385
+
+c) Now we have to rename the PC.
+
+Inside your VM, right click start menu then click > System > click “Rename your PC”.
+
+Proceed to Restart.
+
+Step 5 — Install Active Directory Domain Services
+
+a) Open “Server Manager”.
+
+Go to > “Add roles and features” > click on “next” until you reach the following page and then select “Active Directory Domain Services” > click on 
+“Add Features” > Continue pressing “next” and then press “install”. Once its done you can click close.
+
+Now you will see a yellow flag on the top right corner, click on it and proceed to click on “Promote this server to a domain controller” > Now click on 
+“Add a new forest” and name it “mydomain.com” and click “Next”.
+
+NOTE: If you’re VM gets stuck or you can’t click on any of the options , wait for a few minutes and try again.
+
+Now set your password and continue to click on “Next” > Continue clicking “Next” and “Install” and allow it to restart.
+
+Step 6 — Create Domain Admin Account
+
+a) Go to Start > Windows Administrative Tools > Active Directory Users and Computers
+
+Right click on mydomain.com > New > Organizational Unit. Name it “_ADMINS” and uncheck the box > Now right click _ADMINS > New > User and fill it in the 
+parameters.
+
+Uncheck “User must change password at next logon”.
+Check “Password never expires”.
+
+Now right click your user > properties > member of > Add > type “Domain Admins” > Click “Check Names” and Apply.
+
+Step 7 — Re-login with Domain Admin account
+
+a) Sign out.
+
+b) On the login page click on “Other User” and use the credentials you made in the previous step.
+
+Step 8 — Install and configure RAS/NAT
+
+Now we have to install and configure RAS/NAT , go to Server Manager > Add roles and features > click next until you reach “Select server roles” and tick 
+“Remote Access” > Click next until you reach “Select role services”, tick “Routing” and add the feature , now continue through the rest of the installation.
+
+Once its done we can close it > Now from the top right corner of Server Manager , go to Tools > Routing and Remote Access > Right click “DOMAINCONTROLLER”
+and click “Configure and Enable Routing and Remote Access” > Select “NAT”.
+
+Now click on “Use this public interface to connect to the Internet:” and select/highlight the “Internet” interface then click next and complete the 
+configuration.
+
+NOTE: If you are unable to select this option then close all the windows and try again.
+
+Now we are done configuring the RAS/NAT and can continue to the next step.
+
+Step 8 — Install and Configure DHCP
+
+In Server Manager go to “ Add roles and features”
+
+Select “DHCP Server” and continue to install.
+
+Now after that is complete go to Tools > DHCP > Right click IPv4 > New Scope…
+
+Now copy the following parameters, leave blank or click next if not specified:
+
+After you are done with the scope wizard, right-click your domain server > click refresh and then right click IPv4 and click refresh. Your IPv4 should 
+turn green.
+
+Step 9 — Enable Browsing and Download PowerShell Scripts
+
+a) Go to Server Manager > Configure this local server > Turn “IE Enhanced Security Configuration” Off.
+
+b) Now we will download the PowerShell script, inside the domain controller (VM) go to https://github.com/joshmadakor1/AD_PS/archive/master.zip and 
+download the file.
+
+Extract the file then open names.txt and add your name to the top of the file > Click on Start > Windows PowerShell >Right-click Windows PowerShell ISE > 
+> More > Run as administrator > Now go to File > Open and then open the script we downloaded named “1_CREATE_USERS”
+
+Enter the following command:
+
+Set-ExecutionPolicy Unrestricted
+
+Click “Yes to all”. 
+
+Script Explanation:
+
+All the users will use the password = “Password1” and then all names from names.txt will be stored in USER_FIRST_LAST_LIST using Get-content. Now we will 
+encrypt the plaintext password using line 6 and then line 7 automates the step in creating an organizational unit and disabling “protect container from 
+accidental deletion”. Lines 15 to 24 is a loop which will run for each individual user in the list. Lines 10 and 11 splits the entire name into two 
+sections called “first” and “last”. Line 12 creates a variable named “username” and concatenates the first character of the first name with entire last 
+name. For e.g. — the name Mukkaram Satti will become msatti. Line 13 will print the text in between the quotations with specific colors. Lines 15–23 will 
+automate the process to create a new user in active directory which we have done previously by using the GUI.
+
+c) Now in PowerShell using the cd command , navigate to the directory of your script and then run the script > click “run once”.
+
+Go to Active Directory Users and Computers and Under “Users” you should see all the users that the script created.
+
+Step 10 — Set up Windows 10 VM and Install OS
+
+a) Minimize the domain controller and go back to your original machine go to VirtualBox > New and set the following parameters:
+
+If unspecified the continue with default values. Now the VM should be created. Go to Settings > Advanced and turn on “Shared Clipboard” and “Drag’n’Drop” to “bidirectional”.
+Go to System > Processor. If you have the capacity then increase the amount of cores used.
+
+Go to Network > Adapter 1 and set the following parameters: 
+Enable Network Adapter > Attached to: Internal Network > Name: intnet
+
+Now we are done with configuring the settings , Double click the VM to start it.
+
+b) Click on the browse icon and select the Windows 10 ISO file.
+
+Highlight your Windows 10 ISO and click Choose > Start. Now continue with the Windows 10 operating system setup/installation. Select “Custom Installation”
+
+Continue the installation process by clicking next. When prompted click on “Domain join” and then create your credentials. Disable all privacy setting 
+options and click accept. Once your operating system is done installing and you have access to your system, we need to check whether the internet is 
+working. Go to Start > CMD and type the following command:
+
+ipconfig
+
+You should have an IPv4 Address and Default Gateway specified. Now try to ping Google. Since we are able to ping Google and get a reply back it means 
+that our internet is working. 
+
+c) Now lets change our hostname.
+
+Right click start menu > System > Scroll down and click “Rename this PC (advanced)” > Change and then enter the following:
+
+Computer Name : Clent1
+Domain : mydomain.com
+
+After you click OK it will prompt you to login, use the domain admin credentials you created in Step 6a and then allow it to restart now.
+
+d) Go to back to the Domain Controller > Server Manager > Tools > DHCP > IPv4 > Scope > Address Leases and check whether your client lease is showing up.
+
+Go to Active Directory Users and Computers > mydomain.com > Computers . You should be able to see your client computer.
+
+e) Go back to your client machine/Windows 10 machine and log in with the “Other User” option. Use the credentials you created from the PowerShell script 
+with default password as “Password1”. You could even try one of the random accounts from the bulk user list we had inputted.
+
+Go to CMD and type the command:
+
+whoami
+
+Conclusion
+
+We are now complete with our network and have created a mini-corporate environment with all the users in the PowerShell script list as users who can 
+log in from their machine into the corporation domain and connect to the network. It is like how a university or school lab is set up with each student 
+having their own set of credentials and the ability to connect to the establishments network.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Now lets try to ping our Domain Controller.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
